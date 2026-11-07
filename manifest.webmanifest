@@ -1,6 +1,6 @@
 {
   "name": "VastMyWealth Inbox",
-  "short_name": "VMW Inbox",
+  "short_name": "Admin",
   "description": "Reply to WhatsApp conversations from VastMyWealth customers and partners.",
   "start_url": "./",
   "scope": "./",
