@@ -1,0 +1,15 @@
+{
+  "name": "VastMyWealth Inbox",
+  "short_name": "VMW Inbox",
+  "description": "Reply to WhatsApp conversations from VastMyWealth customers and partners.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A1730",
+  "theme_color": "#0A1730",
+  "icons": [
+    { "src": "/logo.png", "sizes": "192x192 512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/logo.png", "sizes": "192x192 512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
