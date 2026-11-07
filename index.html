@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0A1730">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VMW Inbox">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/logo.png">
+<link rel="apple-touch-icon" href="/logo.png">
+<title>Manual Inbox — VastMyWealth</title>
+<style>
+:root{
+  --navy-1:#0A1730; --navy-2:#122a56; --panel:#152B54; --panel-border:rgba(212,165,74,.35);
+  --gold:#D9A94E; --gold-deep:#B8863B; --text-onnavy:#EDF1FA; --text-onnavy-muted:#A9B8DA;
+  --forest:#3FBE86; --rust:#E4776B;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html, body{ height:100%; overflow:hidden; }
+body{ font-family:-apple-system,'Segoe UI',Roboto,'Helvetica Neue',sans-serif; background:linear-gradient(180deg, var(--navy-1), var(--navy-2)); color:var(--text-onnavy); }
+button{ font-family:inherit; }
+.hidden{ display:none !important; }
+.app{ display:flex; flex-direction:column; height:100vh; height:100dvh; }
+.view{ display:none; flex-direction:column; height:100%; }
+.view.active{ display:flex; }
+
+/* ---------- list ---------- */
+.list-header{ padding:calc(14px + env(safe-area-inset-top)) 16px 14px; border-bottom:1px solid var(--panel-border); display:flex; justify-content:space-between; align-items:center; gap:10px; flex-shrink:0; }
+.list-header h2{ font-size:17px; }
+.header-actions{ display:flex; gap:8px; }
+.refresh-btn{ background:var(--gold); color:var(--navy-1); border:none; border-radius:8px; padding:9px 16px; font-weight:700; cursor:pointer; font-size:13px; text-decoration:none; display:inline-flex; align-items:center; }
+.refresh-btn.ghost{ background:rgba(255,255,255,.08); color:var(--text-onnavy); border:1px solid var(--panel-border); }
+.refresh-btn:active{ filter:brightness(.92); }
+.thread-list{ overflow-y:auto; flex:1; -webkit-overflow-scrolling:touch; }
+.thread-item{ padding:14px 16px; border-bottom:1px solid rgba(255,255,255,.06); cursor:pointer; position:relative; }
+.thread-item:active{ background:rgba(217,169,78,.1); }
+.thread-top{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; }
+.thread-mobile{ font-weight:700; font-size:15px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.thread-time{ font-size:11px; color:var(--text-onnavy-muted); flex-shrink:0; }
+.thread-item.unread .thread-time{ color:var(--gold); font-weight:700; }
+.thread-item.unread .thread-preview{ color:var(--text-onnavy); font-weight:600; }
+.unread-dot{ display:inline-block; width:9px; height:9px; border-radius:50%; background:var(--gold); margin-right:8px; }
+.thread-preview{ font-size:13px; color:var(--text-onnavy-muted); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.thread-dir-out{ color:var(--forest); }
+.empty-msg{ padding:24px 16px; color:var(--text-onnavy-muted); font-size:14px; text-align:center; }
+
+.tag-row{ display:flex; gap:6px; align-items:center; margin-top:6px; flex-wrap:wrap; }
+.role-tag{ font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:10px; display:inline-block; }
+.role-customer{ background:rgba(127,176,255,.15); color:#7FB0FF; }
+.role-partner{ background:rgba(217,169,78,.15); color:var(--gold); }
+.role-unknown{ background:rgba(255,255,255,.06); color:var(--text-onnavy-muted); }
+.regstatus-tag{ font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:10px; }
+.regstatus-registered{ background:rgba(63,190,134,.15); color:var(--forest); }
+.regstatus-pending{ background:rgba(228,119,107,.15); color:var(--rust); }
+.window-badge{ font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; display:inline-block; }
+.window-open{ background:rgba(63,190,134,.15); color:var(--forest); }
+.window-closed{ background:rgba(228,119,107,.15); color:var(--rust); }
+
+/* ---------- conversation ---------- */
+.thread-header{ padding:calc(10px + env(safe-area-inset-top)) 16px 10px; border-bottom:1px solid var(--panel-border); display:flex; align-items:center; gap:12px; flex-shrink:0; }
+.back-btn{ background:none; border:none; color:var(--text-onnavy); font-size:22px; cursor:pointer; padding:4px 8px; line-height:1; }
+.thread-header-info{ flex:1; min-width:0; }
+.thread-header-mobile{ font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.thread-header-info .window-badge{ margin-top:3px; }
+.call-btn{ background:var(--forest); color:#fff; border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center; font-size:18px; text-decoration:none; flex-shrink:0; }
+.call-btn:active{ filter:brightness(.9); }
+
+.messages{ flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:10px; -webkit-overflow-scrolling:touch; }
+.msg{ max-width:82%; padding:10px 13px; border-radius:12px; font-size:14px; line-height:1.4; word-wrap:break-word; overflow-wrap:anywhere; white-space:pre-wrap; }
+.msg-in{ align-self:flex-start; background:var(--panel); border:1px solid var(--panel-border); }
+.msg-out{ align-self:flex-end; background:var(--gold); color:var(--navy-1); }
+.msg-time{ font-size:10px; opacity:.65; margin-top:4px; white-space:normal; }
+
+.composer{ border-top:1px solid var(--panel-border); padding:10px 12px calc(10px + env(safe-area-inset-bottom)) 12px; flex-shrink:0; }
+.quick-replies{ display:flex; gap:8px; overflow-x:auto; margin-bottom:8px; padding-bottom:2px; -webkit-overflow-scrolling:touch; }
+.qr-btn{ background:rgba(255,255,255,.06); border:1px solid var(--panel-border); color:var(--text-onnavy-muted); border-radius:16px; padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+.qr-btn:active{ border-color:var(--gold); color:#fff; }
+.composer-row{ display:flex; gap:8px; }
+.composer-row textarea{ flex:1; border-radius:10px; border:1px solid var(--panel-border); background:rgba(255,255,255,.04); color:#fff; padding:10px; font-size:16px; resize:none; min-height:42px; max-height:110px; font-family:inherit; }
+.send-btn{ background:var(--gold); color:var(--navy-1); border:none; border-radius:10px; padding:0 18px; font-weight:700; cursor:pointer; font-size:14px; }
+.send-btn:disabled{ opacity:.4; cursor:not-allowed; }
+
+/* ---------- password screen ---------- */
+.login{ position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:24px; background:linear-gradient(180deg, var(--navy-1), var(--navy-2)); }
+.login-card{ width:100%; max-width:340px; text-align:center; }
+.login-card img{ width:72px; height:72px; border-radius:18px; margin-bottom:16px; object-fit:cover; }
+.login-card h1{ font-size:19px; margin-bottom:6px; }
+.login-card p{ font-size:13px; color:var(--text-onnavy-muted); margin-bottom:18px; }
+.login-card input{ width:100%; padding:13px 14px; border-radius:10px; border:1px solid var(--panel-border); background:rgba(255,255,255,.06); color:#fff; font-size:16px; margin-bottom:12px; }
+.login-card input:focus{ outline:2px solid var(--gold); outline-offset:1px; }
+.login-card .refresh-btn{ width:100%; justify-content:center; padding:13px 16px; font-size:15px; border:none; }
+.login-error{ color:#FCA5A5; font-size:13px; margin-top:10px; min-height:18px; }
+</style>
+</head>
+<body>
+
+<div class="login hidden" id="loginView">
+  <div class="login-card">
+    <img src="/logo.png" alt="" onerror="this.style.display='none'">
+    <h1>VastMyWealth Inbox</h1>
+    <p>Enter your inbox password. You only need to do this once on this phone.</p>
+    <input type="password" id="pwInput" placeholder="Inbox password" autocomplete="current-password">
+    <button class="refresh-btn" id="loginBtn">Open inbox</button>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<div class="app">
+
+  <div class="view active" id="listView">
+    <div class="list-header">
+      <h2>Conversations</h2>
+      <div class="header-actions">
+        <a class="refresh-btn ghost" id="adminBtn" href="#" target="_blank" rel="noopener">Admin</a>
+        <button class="refresh-btn" id="refreshBtn">Refresh</button>
+      </div>
+    </div>
+    <div class="thread-list" id="threadList"><div class="empty-msg">Loading…</div></div>
+  </div>
+
+  <div class="view" id="threadView">
+    <div class="thread-header">
+      <button class="back-btn" id="backBtn" aria-label="Back to conversations">←</button>
+      <div class="thread-header-info">
+        <div class="thread-header-mobile" id="threadHeaderMobile"></div>
+        <span class="window-badge" id="windowBadge"></span>
+      </div>
+      <a class="call-btn" id="callBtn" href="#" title="Call" aria-label="Call">📞</a>
+    </div>
+    <div class="messages" id="messagesPane"></div>
+    <div class="composer">
+      <div class="quick-replies" id="quickReplies"></div>
+      <div class="composer-row">
+        <textarea id="replyText" placeholder="Type a reply…" rows="1"></textarea>
+        <button class="send-btn" id="sendBtn">Send</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="/config.js"></script>
+<script>
+(function () {
+  var CFG = window.APP_CONFIG || {};
+  var PW_KEY = 'vmw_inbox_pw', SEEN_KEY = 'vmw_inbox_seen';
+  var currentMobile = null;
+  var quickReplies = null;
+  var threads = [];
+  var listSig = '', convoSig = '';
+  var windowOpenNow = false;
+  var tick = 0;
+  var seen = {};
+  try { seen = JSON.parse(localStorage.getItem(SEEN_KEY) || '{}'); } catch (e) { seen = {}; }
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { var d = document.createElement('div'); d.textContent = (s === undefined || s === null) ? '' : s; return d.innerHTML; }
+
+  /* ---------- talking to /api (the Cloudflare function) ---------- */
+  function api(path, opts) {
+    opts = opts || {};
+    opts.headers = Object.assign({ 'X-Inbox-Password': localStorage.getItem(PW_KEY) || '' }, opts.headers || {});
+    return fetch('/api/' + path, opts).then(function (r) {
+      if (r.status === 401) { showLogin(true); throw new Error('unauthorized'); }
+      return r.json();
+    });
+  }
+
+  /* ---------- password screen ---------- */
+  function showLogin(wasRejected) {
+    $('loginView').classList.remove('hidden');
+    $('loginError').textContent = wasRejected && localStorage.getItem(PW_KEY) ? 'That password was not accepted. Try again.' : '';
+    localStorage.removeItem(PW_KEY);
+    $('pwInput').value = '';
+  }
+  function doLogin() {
+    var pw = $('pwInput').value.trim();
+    if (!pw) return;
+    localStorage.setItem(PW_KEY, pw);
+    $('loginBtn').disabled = true;
+    api('login').then(function (d) {
+      if (d && d.success) { $('loginView').classList.add('hidden'); start(); }
+      else { $('loginError').textContent = (d && d.error) || 'Could not sign in.'; }
+    }).catch(function (err) {
+      if (err.message !== 'unauthorized') $('loginError').textContent = 'Connection error. Check your internet and try again.';
+    }).then(function () { $('loginBtn').disabled = false; });
+  }
+  $('loginBtn').addEventListener('click', doLogin);
+  $('pwInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
+
+  /* ---------- helpers ---------- */
+  function timeLabel(ts) {
+    if (!ts) return '';
+    var d = new Date(ts), now = new Date();
+    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    var y = new Date(now.getTime() - 86400000);
+    if (d.toDateString() === y.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString([], { day: 'numeric', month: 'short' });
+  }
+  function markSeen(mobile, ts) {
+    if (!ts || (seen[mobile] || 0) >= ts) return;
+    seen[mobile] = ts;
+    try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) {}
+  }
+  function isUnread(t) { return t.lastDirection === 'In' && t.lastTimestamp > (seen[t.mobile] || 0); }
+  function updateTitle() {
+    var n = threads.filter(isUnread).length;
+    document.title = (n ? '(' + n + ') ' : '') + 'Manual Inbox — VastMyWealth';
+  }
+
+  /* ---------- conversation list ---------- */
+  function showListView() {
+    $('threadView').classList.remove('active');
+    $('listView').classList.add('active');
+    currentMobile = null;
+    renderThreads(true);
+    loadThreads(true);
+  }
+  function showThreadView() {
+    $('listView').classList.remove('active');
+    $('threadView').classList.add('active');
+  }
+
+  function loadThreads(silent) {
+    if (!silent) $('threadList').innerHTML = '<div class="empty-msg">Loading…</div>';
+    return api('threads').then(function (data) {
+      if (!data.success) { if (!silent) $('threadList').innerHTML = '<div class="empty-msg">' + esc(data.error || 'Error loading conversations.') + '</div>'; return; }
+      threads = data.threads || [];
+      // First launch on this phone: everything already there counts as read.
+      if (!localStorage.getItem(SEEN_KEY)) { threads.forEach(function (t) { seen[t.mobile] = t.lastTimestamp; }); localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); }
+      renderThreads(false);
+    }).catch(function (err) {
+      if (err.message !== 'unauthorized' && !silent) $('threadList').innerHTML = '<div class="empty-msg">Connection error. Pull down or tap Refresh to retry.</div>';
+    });
+  }
+
+  function renderThreads(force) {
+    updateTitle();
+    var sig = threads.map(function (t) { return [t.mobile, t.lastTimestamp, t.windowOpen, t.status, t.role, t.hasLead, isUnread(t)].join(':'); }).join('|');
+    if (!force && sig === listSig) return;
+    listSig = sig;
+
+    var list = $('threadList');
+    if (!threads.length) { list.innerHTML = '<div class="empty-msg">No conversations in the last 48 hours.</div>'; return; }
+    list.innerHTML = '';
+    threads.forEach(function (t) {
+      var unread = isUnread(t);
+      var item = document.createElement('div');
+      item.className = 'thread-item' + (unread ? ' unread' : '');
+      var dirLabel = t.lastDirection === 'Out' ? '<span class="thread-dir-out">You: </span>' : '';
+      var roleClass = t.role === 'Customer' ? 'role-customer' : (t.role === 'Partner' ? 'role-partner' : 'role-unknown');
+      var displayName = t.name ? (esc(t.name) + ' — ' + esc(t.mobile)) : esc(t.mobile);
+      var regClass = t.status === 'Registered' ? 'regstatus-registered' : 'regstatus-pending';
+      var statusHtml = t.status ? '<span class="regstatus-tag ' + regClass + '">' + esc(t.status) + '</span>' : '';
+      var windowHtml = '<span class="window-badge ' + (t.windowOpen ? 'window-open' : 'window-closed') + '">' + (t.windowOpen ? 'Open' : 'Closed') + '</span>';
+
+      item.innerHTML =
+        '<div class="thread-top"><div class="thread-mobile">' + (unread ? '<span class="unread-dot"></span>' : '') + displayName + '</div>' +
+        '<div class="thread-time">' + esc(timeLabel(t.lastTimestamp)) + '</div></div>' +
+        '<div class="thread-preview">' + dirLabel + esc(t.lastMessage) + '</div>' +
+        '<div class="tag-row"><span class="role-tag ' + roleClass + '">' + esc(t.role) + (t.hasLead ? ' ✓ Form Filled' : '') + '</span>' + statusHtml + windowHtml + '</div>';
+      item.onclick = function () { openThread(t.mobile, t.name); };
+      list.appendChild(item);
+    });
+  }
+
+  /* ---------- one conversation ---------- */
+  function openThread(mobile, name) {
+    currentMobile = mobile;
+    convoSig = '';
+    history.pushState({ thread: mobile }, '');
+    showThreadView();
+    $('threadHeaderMobile').textContent = name ? (name + ' (' + mobile + ')') : mobile;
+    $('callBtn').href = 'tel:+91' + mobile;
+    $('messagesPane').innerHTML = '<div class="empty-msg">Loading…</div>';
+    $('windowBadge').textContent = '';
+    loadQuickReplies();
+    refreshThread(false);
+  }
+
+  function loadQuickReplies() {
+    if (quickReplies) { renderQuickReplies(); return; }
+    api('quick-replies').then(function (d) {
+      quickReplies = d.success ? (d.replies || []) : [];
+      renderQuickReplies();
+    }).catch(function () {});
+  }
+  function renderQuickReplies() {
+    var box = $('quickReplies');
+    box.innerHTML = '';
+    (quickReplies || []).forEach(function (qr) {
+      var btn = document.createElement('button');
+      btn.className = 'qr-btn';
+      btn.textContent = qr.label;
+      btn.onclick = function () { $('replyText').value = qr.message; $('replyText').focus(); };
+      box.appendChild(btn);
+    });
+  }
+
+  function refreshThread(silent) {
+    var mobile = currentMobile;
+    if (!mobile) return Promise.resolve();
+    return api('messages?mobile=' + encodeURIComponent(mobile)).then(function (data) {
+      if (mobile !== currentMobile) return; // user moved on
+      if (!data.success) { if (!silent) $('messagesPane').innerHTML = '<div class="empty-msg">' + esc(data.error || 'Error loading messages.') + '</div>'; return; }
+      renderConversation(data);
+    }).catch(function (err) {
+      if (err.message !== 'unauthorized' && !silent && mobile === currentMobile) $('messagesPane').innerHTML = '<div class="empty-msg">Connection error.</div>';
+    });
+  }
+
+  function renderConversation(data) {
+    var msgs = data.messages || [];
+    var lastTs = msgs.length ? msgs[msgs.length - 1].timestamp : 0;
+    markSeen(currentMobile, lastTs);
+
+    windowOpenNow = !!data.windowOpen;
+    var badge = $('windowBadge');
+    badge.textContent = windowOpenNow ? 'Window open' : 'Window closed';
+    badge.className = 'window-badge ' + (windowOpenNow ? 'window-open' : 'window-closed');
+
+    var textEl = $('replyText'), sendBtn = $('sendBtn');
+    textEl.disabled = !windowOpenNow;
+    sendBtn.disabled = !windowOpenNow;
+    textEl.placeholder = windowOpenNow ? 'Type a reply…' : 'Window closed — the customer must message first';
+
+    var sig = msgs.length + ':' + lastTs;
+    if (sig === convoSig) return;   // nothing new — leave scroll and typing alone
+    convoSig = sig;
+
+    var pane = $('messagesPane');
+    var nearBottom = (pane.scrollHeight - pane.scrollTop - pane.clientHeight) < 120 || !pane.children.length || pane.querySelector('.empty-msg');
+    pane.innerHTML = '';
+    if (!msgs.length) pane.innerHTML = '<div class="empty-msg">No messages yet.</div>';
+    msgs.forEach(function (m) {
+      var div = document.createElement('div');
+      div.className = 'msg ' + (m.direction === 'Out' ? 'msg-out' : 'msg-in');
+      div.innerHTML = esc(m.message) + '<div class="msg-time">' + esc(new Date(m.timestamp).toLocaleString([], { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })) + '</div>';
+      pane.appendChild(div);
+    });
+    if (nearBottom) pane.scrollTop = pane.scrollHeight;
+  }
+
+  /* ---------- send ---------- */
+  $('sendBtn').addEventListener('click', function () {
+    if (!currentMobile) return;
+    var textEl = $('replyText');
+    var message = textEl.value.trim();
+    if (!message) return;
+    var btn = $('sendBtn');
+    btn.disabled = true; btn.textContent = '…';
+
+    api('send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mobile: currentMobile, message: message }) })
+      .then(function (d) {
+        if (d.success) { textEl.value = ''; convoSig = ''; return refreshThread(true); }
+        alert('Could not send: ' + (d.error || 'Unknown error'));
+      })
+      .catch(function (err) { if (err.message !== 'unauthorized') alert('Connection error: ' + err.message); })
+      .then(function () { btn.textContent = 'Send'; btn.disabled = !windowOpenNow; });
+  });
+
+  /* ---------- navigation ---------- */
+  $('backBtn').addEventListener('click', function () { if (history.state && history.state.thread) history.back(); else showListView(); });
+  window.addEventListener('popstate', function () { if ($('threadView').classList.contains('active')) showListView(); });
+  $('refreshBtn').addEventListener('click', function () { loadThreads(false); });
+
+  /* ---------- live updates: only while the app is on screen ---------- */
+  setInterval(function () {
+    if (document.hidden || !localStorage.getItem(PW_KEY)) return;
+    tick++;
+    if (currentMobile) refreshThread(true);
+    else if (tick % 2 === 0) loadThreads(true);
+  }, 10000);
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden || !localStorage.getItem(PW_KEY)) return;
+    if (currentMobile) refreshThread(true); else loadThreads(true);
+  });
+
+  /* ---------- start ---------- */
+  function start() {
+    var adminBtn = $('adminBtn');
+    if (CFG.ADMIN_URL) adminBtn.href = CFG.ADMIN_URL; else adminBtn.classList.add('hidden');
+    loadThreads(false);
+  }
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });
+  }
+
+  if (localStorage.getItem(PW_KEY)) start(); else showLogin(false);
+})();
+</script>
+</body>
+</html>
