@@ -9,9 +9,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="VMW Inbox">
-<link rel="manifest" href="/manifest.webmanifest">
-<link rel="icon" href="/logo.png">
-<link rel="apple-touch-icon" href="/logo.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
 <title>Manual Inbox — VastMyWealth</title>
 <style>
 :root{
@@ -100,7 +100,7 @@ button{ font-family:inherit; }
 
 <div class="login hidden" id="loginView">
   <div class="login-card">
-    <img src="/logo.png" alt="" onerror="this.style.display='none'">
+    <img src="logo.png" alt="" onerror="this.style.display='none'">
     <h1>VastMyWealth Inbox</h1>
     <p>Enter your inbox password. You only need to do this once on this phone.</p>
     <input type="password" id="pwInput" placeholder="Inbox password" autocomplete="current-password">
@@ -143,10 +143,11 @@ button{ font-family:inherit; }
 
 </div>
 
-<script src="/config.js"></script>
+<script src="config.js"></script>
 <script>
 (function () {
   var CFG = window.APP_CONFIG || {};
+  var API_BASE = String(CFG.API_BASE || '').replace(/\/+$/, '') + '/api/';
   var PW_KEY = 'vmw_inbox_pw', SEEN_KEY = 'vmw_inbox_seen';
   var currentMobile = null;
   var quickReplies = null;
@@ -164,7 +165,7 @@ button{ font-family:inherit; }
   function api(path, opts) {
     opts = opts || {};
     opts.headers = Object.assign({ 'X-Inbox-Password': localStorage.getItem(PW_KEY) || '' }, opts.headers || {});
-    return fetch('/api/' + path, opts).then(function (r) {
+    return fetch(API_BASE + path, opts).then(function (r) {
       if (r.status === 401) { showLogin(true); throw new Error('unauthorized'); }
       return r.json();
     });
@@ -388,7 +389,7 @@ button{ font-family:inherit; }
   }
 
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function () {}); });
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
   }
 
   if (localStorage.getItem(PW_KEY)) start(); else showLogin(false);
