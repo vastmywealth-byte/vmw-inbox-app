@@ -94,6 +94,9 @@ button{ font-family:inherit; }
 .login-card input:focus{ outline:2px solid var(--gold); outline-offset:1px; }
 .login-card .refresh-btn{ width:100%; justify-content:center; padding:13px 16px; font-size:15px; border:none; }
 .login-error{ color:#FCA5A5; font-size:13px; margin-top:10px; min-height:18px; }
+  .rem-btn{ background:rgba(255,255,255,.08); color:var(--text-onnavy); border:1px solid var(--panel-border); border-radius:16px; padding:7px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+.rem-btn.stopped{ background:rgba(228,119,107,.15); color:var(--rust); border-color:var(--rust); }
+.rem-btn:disabled{ opacity:.5; cursor:not-allowed; }
 </style>
 </head>
 <body>
@@ -129,6 +132,7 @@ button{ font-family:inherit; }
         <div class="thread-header-mobile" id="threadHeaderMobile"></div>
         <span class="window-badge" id="windowBadge"></span>
       </div>
+           <button class="rem-btn hidden" id="remBtn">🔔 Stop reminders</button>
       <a class="call-btn" id="callBtn" href="#" title="Call" aria-label="Call">📞</a>
     </div>
     <div class="messages" id="messagesPane"></div>
@@ -280,6 +284,7 @@ button{ font-family:inherit; }
     $('messagesPane').innerHTML = '<div class="empty-msg">Loading…</div>';
     $('windowBadge').textContent = '';
     loadQuickReplies();
+        loadRemState();
     refreshThread(false);
   }
 
@@ -345,7 +350,38 @@ button{ font-family:inherit; }
     });
     if (nearBottom) pane.scrollTop = pane.scrollHeight;
   }
-
+  /* ---------- reminders on/off for this customer ---------- */
+  var remState = null;
+  function renderRemBtn() {
+    var b = $('remBtn');
+    if (!remState) { b.classList.add('hidden'); return; }
+    b.classList.remove('hidden');
+    if (!remState.active && !remState.stopped) { b.className = 'rem-btn'; b.textContent = '🔔 No reminders pending'; b.disabled = true; return; }
+    b.disabled = false;
+    if (remState.stopped) { b.className = 'rem-btn stopped'; b.textContent = '🔕 Stopped · Resume'; }
+    else { b.className = 'rem-btn'; b.textContent = '🔔 Stop reminders'; }
+  }
+  function loadRemState() {
+    var mobile = currentMobile;
+    remState = null; renderRemBtn();
+    api('reminders?mobile=' + encodeURIComponent(mobile)).then(function (d) {
+      if (mobile !== currentMobile) return;
+      remState = (d && d.success && d.hasSession) ? d : null;
+      renderRemBtn();
+    }).catch(function () {});
+  }
+  $('remBtn').addEventListener('click', function () {
+    if (!currentMobile || !remState) return;
+    var mobile = currentMobile, stop = !remState.stopped;
+    if (!stop && !confirm('Turn reminders back on for this customer?')) return;
+    $('remBtn').disabled = true;
+    api('reminders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mobile: mobile, stop: stop }) })
+      .then(function (d) {
+        if (!d || !d.success) alert('Could not update: ' + ((d && d.error) || 'Unknown error'));
+        if (mobile === currentMobile) loadRemState();
+      })
+      .catch(function (err) { if (err.message !== 'unauthorized') alert('Connection error: ' + err.message); renderRemBtn(); });
+  });
   /* ---------- send ---------- */
   $('sendBtn').addEventListener('click', function () {
     if (!currentMobile) return;
